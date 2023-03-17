@@ -1,10 +1,23 @@
 import { Client } from 'boardgame.io/client';
+import { Local } from 'boardgame.io/multiplayer';
 import { TicTacToe } from './Game';
 
 class TicTacToeClient {
-    constructor(rootElement) {
+    // Pass a playerID in the constructor so that each client knows
+    // which player it's playing for
+    constructor(rootElement, { playerID } = {}) {
         // Create a boardgame.io client
-        this.client = Client({ game: TicTacToe });
+        this.client = Client({
+            game: TicTacToe,
+            multiplayer: Local({
+                // Enable localStorage cache to save game state in browser localStorage
+                persist: true,
+              
+                // Set custom prefix to store data under. Default: 'bgio'.
+                storageKey: 'bgio'
+              }),
+            playerID
+        });
 
         // Call its start method to run it
         this.client.start();
@@ -58,26 +71,32 @@ class TicTacToeClient {
 
         // Update cells to display the values in game state.
         cells.forEach(cell => {
-          const cellId = parseInt(cell.dataset.id);
-          const cellValue = state.G.cells[cellId];
-          cell.textContent = cellValue !== null ? cellValue : '';
+            const cellId = parseInt(cell.dataset.id);
+            const cellValue = state.G.cells[cellId];
+            cell.textContent = cellValue !== null ? cellValue : '';
         });
 
         // Get the gameover message element.
         const messageEl = this.rootElement.querySelector('.winner');
-        
+
         // Update the element to show a winner if any.
         if (state.ctx.gameover) {
-          messageEl.textContent =
-            state.ctx.gameover.winner !== undefined
-              ? 'Winner: ' + state.ctx.gameover.winner
-              : 'Draw!';
+            messageEl.textContent =
+                state.ctx.gameover.winner !== undefined
+                    ? 'Winner: ' + state.ctx.gameover.winner
+                    : 'Draw!';
         } else {
-          messageEl.textContent = '';
+            messageEl.textContent = '';
         }
-      }
+    }
 
 }
 
 const appElement = document.getElementById('app');
-const app = new TicTacToeClient(appElement);
+const playerIDs = ['0', '1'];
+
+const clients = playerIDs.map(playerID => {
+    const rootElement = document.createElement('div');
+    appElement.append(rootElement);
+    return new TicTacToeClient(rootElement, { playerID });
+  });
